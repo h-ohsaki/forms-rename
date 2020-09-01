@@ -66,6 +66,7 @@ Microsoft Forms では、質問の種別として「ファイルのアップロ�
 
 - Python 3
 - perlcompat (https://pypi.org/project/perlcompat/)
+- openpyxl (https://pypi.org/project/openpyxl/)
 
 ## 実行ファイルを使用する場合
 
@@ -75,7 +76,7 @@ Linux (x64) または Windows 10 (x64) 向けの実行ファイルを使用す�
 # INSTALLATION
 
 ```sh
-pip3 install perlcompat
+pip3 install perlcompat openpyxl
 ./forms-rename
 ```
 ## Linux (x64) または Windows 10 (x64) で実行ファイルを使用する場合
