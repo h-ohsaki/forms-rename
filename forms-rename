@@ -34,7 +34,7 @@ import openpyxl
 # FIXME: avoid hardcoding
 ID_COL = 3  # Microsoft ID (abc12345@nuc.kwansei.ac.jp)
 NAME_COL = 4  # Name
-Q_START_COL = 5
+Q_START_COL = 5  # the first column of the queries
 
 def usage():
     die(f"""\
@@ -52,20 +52,24 @@ def normalized_name(name):
     return name.replace(' ', '_')
 
 def normalized_path(file, id_, name, qid, dir_, count):
-    """Generate a filename for a local file FILE, which is submitted by user
-    with ID_ and NAME for QID-th question.  The dictionary COUNT is used for
-    checking duplicate submissions."""
+    """Return a normalized path name for a file FILE stored under the
+    dictionary DIR_.  The file is submitted by a respondent having ID_ and
+    NAME for the QID-th question.  The dictionary COUNT is used for checking
+    duplicate submissions."""
     prefix = f'q{qid}-{id_}-{name}'
     key = prefix
-    if count[key] >= 1:  # duplicate submission?
+    if count[key] >= 1:  # is duplicate submission?
         prefix += f'-{count[key] + 1}'
     count[key] += 1
     # extract the file extension
-    # FIXME: should change to lowercase
+    # FIXME: should be lowercase
     ext = re.sub(r'^.+\.', '', file)
     return os.path.join(dir_, prefix + f'.{ext}')
 
 def normalize_file(v, id_, name, qid, dir_, count):
+    """Copy the local file corresponding to the SharePoint URL V with a
+    normalized name.  See the dochelp of normalized_path for other
+    parameters."""
     v = urllib.parse.unquote(v)
     # check if the value is a SharePoint (OneDrive) resource URL
     m = re.search(r'/Microsoft Forms/(.+?)/(.+?)/(.+?)$', v)
@@ -76,12 +80,11 @@ def normalize_file(v, id_, name, qid, dir_, count):
             tkinter.messagebox.showerror(message=f"File '{path}' not found")
             return
         newpath = normalized_path(file, id_, name, qid, dir_, count)
-        print(path, newpath)
         shutil.copyfile(path, newpath)
 
 def parse_book(book, dir_):
     """Look through the first worksheet of the Excel book BOOK, and copy all
-    uploaded files with normalized names."""
+    submitted files stored under the directory DIR_ with normalized names."""
     count = defaultdict(int)
     # use the first sheet
     sheet = list(book)[0]
