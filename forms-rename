@@ -116,7 +116,7 @@ def main():
         dir_ = sys.argv[2]
     except IndexError:
         dir_ = tkinter.filedialog.askdirectory(
-            title='Select the directory containing uploaded files')
+            title='Select the directory containing submitted files')
     parse_book(book, dir_)
 
 if __name__ == "__main__":
