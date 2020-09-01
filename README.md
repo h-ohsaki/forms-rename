@@ -86,7 +86,7 @@ PyInstaller で単一の実行ファイルに変換したものです。以下�
 ロードして、そのまま (エクスプローラでダブルクリックする等して) 実行してくださ
 い。
 
-https://github.com/h-ohsaki/forms-rename/raw/master/linux-x64/forms-rename-1.1 (準備中)
+https://github.com/h-ohsaki/forms-rename/raw/master/linux-x64/forms-rename-1.1
 
 https://github.com/h-ohsaki/forms-rename/raw/master/win10-x64/forms-rename-1.1 (準備中)
 
