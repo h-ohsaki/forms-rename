@@ -25,21 +25,20 @@ Q_START_COL = 5
 
 def usage():
     die(f"""\
-usage: {sys.argv[0]} [-v] [XLSX-file]
-  -v    verbose mode
+usage: {sys.argv[0]} [XLSX-file] [dir]
 """)
 
-def normalize_id(id_):
+def normalized_id(id_):
     """Return the normalized ID for specified Microsoft ID ID_."""
     # simply remove the domain part from the email address
     return re.sub(r'@.+$', '', id_)
 
-def normalize_name(name):
+def normalized_name(name):
     """Return the normalized name for NAME."""
     # replace all spaces with underscores
     return name.replace(' ', '_')
 
-def normalize_path(id_, name, qid, path, count):
+def normalized_path(file, id_, name, qid, dir_, count):
     """Generate a filename for a local file FILE, which is submitted by user
     with ID_ and NAME for QID-th question.  The dictionary COUNT is used for
     checking duplicate submissions."""
@@ -49,42 +48,42 @@ def normalize_path(id_, name, qid, path, count):
         prefix += f'-{count[key] + 1}'
     count[key] += 1
     # extract the file extension
-    dir_ = os.path.dirname(path)
-    base = os.path.basename(path)
     # FIXME: should change to lowercase
-    ext = re.sub(r'^.+\.', '', base)
-    return os.path.join(prefix + f'.{ext}')
+    ext = re.sub(r'^.+\.', '', file)
+    return os.path.join(dir_, prefix + f'.{ext}')
 
-def parse_book(book, verbose):
+def normalize_file(v, id_, name, qid, dir_, count):
+    v = urllib.parse.unquote(v)
+    # check if the value is a SharePoint (OneDrive) resource URL
+    m = re.search(r'/Microsoft Forms/(.+?)/(.+?)/(.+?)$', v)
+    if m:
+        formdir, qdir, file = m.groups()
+        path = os.path.join(dir_, qdir, file)
+        if not os.path.exists(path):
+            tkinter.messagebox.showerror(message=f"File '{path}' not found")
+            return
+        newpath = normalized_path(file, id_, name, qid, dir_, count)
+        print(path, newpath)
+        shutil.copyfile(path, newpath)
+
+def parse_book(book, dir_):
     """Look through the first worksheet of the Excel book BOOK, and copy all
-    submitted files with normalized names."""
+    uploaded files with normalized names."""
     count = defaultdict(int)
     # use the first sheet
     sheet = list(book)[0]
     for row in sheet.iter_rows(min_row=2):  # skip the header
         # extract the information on the respondent
-        id_ = normalize_id(row[ID_COL].value)
-        name = normalize_name(row[NAME_COL].value)
+        id_ = normalized_id(row[ID_COL].value)
+        name = normalized_name(row[NAME_COL].value)
         for cell in row[Q_START_COL:]:
             if not cell.value:
                 continue
-            v = urllib.parse.unquote(cell.value)
-            # check if the value is a SharePoint (OneDrive) resource URL
-            m = re.search(r'\.sharepoint\.com/.*/Microsoft Forms/(.+)$', v)
-            if m:
-                path = m.group(1)
+            if '.sharepoint.com/' in cell.value:
                 qid = cell.column - Q_START_COL
-                newpath = normalize_path(id_, name, qid, path, count)
-                if newpath:
-                    if verbose:
-                        warn(f"copying '{path}' to '{newpath}'...")
-                    shutil.copyfile(path, newpath)
+                normalize_file(cell.value, id_, name, qid, dir_, count)
 
 def main():
-    opt = getopts('v') or usage()
-    verbose = opt.v
-    verbose = True
-
     # hide tkinter root window
     root = tkinter.Tk()
     root.withdraw()
@@ -96,7 +95,13 @@ def main():
             title='Select Microsoft Forms response file',
             filetypes=[('Microsoft Excel file', '.xlsx')])
     book = openpyxl.load_workbook(response_file)
-    parse_book(book, verbose)
+
+    try:
+        dir_ = sys.argv[2]
+    except IndexError:
+        dir_ = tkinter.filedialog.askdirectory(
+            title='Select the directory containing uploaded files')
+    parse_book(book, dir_)
 
 if __name__ == "__main__":
     main()
